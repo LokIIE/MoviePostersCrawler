@@ -1,13 +1,15 @@
 import logging
 import urllib.request, urllib.parse, urllib.error
 from bs4 import BeautifulSoup
+from models.GlobalConfig import GlobalConfig
+from models.Poster import Poster
 
 # Extract the poster image link from the poster page URL
 class PosterPageOperation:
 
-    def __init__(self, posterInstance, posterImageSelector):
+    def __init__(self, config: GlobalConfig, posterInstance: Poster):
+        self._posterImageSelector = config.getPostersSource()['posterImageSelector']
         self._posterInstance = posterInstance
-        self._posterImageSelector = posterImageSelector
 
     # For a poster, get the poster movie name
     def run(self):

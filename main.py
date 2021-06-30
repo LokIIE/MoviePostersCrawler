@@ -10,7 +10,7 @@ config = GlobalConfig("config.ini")
 crawler = Crawler(config)
 with open(config.getOutputFile(), 'w', newline='', encoding='utf-8') as output:
     writer = csv.writer(output)
-    writer.writerow(["movieTitle", "posterUrl", "posterTitle", "posterPageUrl"])
+    writer.writerow(["movieTitle", "posterUrl", "posterTitle", "posterPageUrl", "movieUrl"])
     crawler.setWriter(writer)
     logging.info("---------- START : process launched ----------")
     crawler.run()

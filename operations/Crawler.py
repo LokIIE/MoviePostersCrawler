@@ -11,6 +11,7 @@ from models.GlobalConfig import GlobalConfig
 from models.Poster import Poster
 from models.UrlValidator import UrlValidator
 from operations.PosterOperation import PosterPageOperation
+from operations.SearchMovieOperation import SearchMovieOperation
 
 class Crawler:
 
@@ -124,8 +125,10 @@ class Crawler:
     def findPosterData(self, queue):
         while True:
             posterInstance = queue.get()
-            posterOp = PosterPageOperation(posterInstance, self._postersSourceConfig['posterImageSelector'])
-            posterOp.run()
+
+            PosterPageOperation(self._config, posterInstance).run()
+            SearchMovieOperation(self._config, posterInstance).run()
+
             self._resultQueue.put(posterInstance)
             queue.task_done()
 

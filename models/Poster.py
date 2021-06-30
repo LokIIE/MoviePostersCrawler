@@ -46,7 +46,10 @@ class Poster:
         return self
 
     def serialize(self):
-        return [self.getMovieTitle(), self.getPosterUrl(), self.getPosterTitle(), self.getPosterPageUrl()]
+        return [self.getMovieTitle(), self.getPosterUrl(), self.getPosterTitle(), self.getPosterPageUrl(), self.getMovieUrl()]
+
+    def setMovieImdbId(self, imdbId):
+        self.setMovieUrl('https://imdb.com/title/' + imdbId)
         
     
 
