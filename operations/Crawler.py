@@ -4,15 +4,17 @@ import concurrent.futures
 import queue
 import time
 import threading
-from models.UrlValidator import UrlValidator
-from models.CrawlerStatus import CrawlerStatus
-from models.Poster import Poster
 import re
 import logging
+from models.CrawlerStatus import CrawlerStatus
+from models.GlobalConfig import GlobalConfig
+from models.Poster import Poster
+from models.UrlValidator import UrlValidator
+from operations.PosterOperation import PosterPageOperation
 
 class Crawler:
 
-    def __init__(self, config):
+    def __init__(self, config: GlobalConfig):
         self._config = config
         self._postersSourceConfig = config.getPostersSource()
         self._baseUrl = self._postersSourceConfig["baseUrl"]
@@ -94,8 +96,10 @@ class Crawler:
 
         for _ in range(self._config.getNbScanWorkers()):
             threading.Thread(target=self.findLinks, daemon=True, args=(self._scanningQueue,)).start()
+
         for _ in range(self._config.getNbDataWorkers()):
             threading.Thread(target=self.findPosterData, daemon=True, args=(self._processingQueue,)).start()
+
         threading.Thread(target=self.processToOutput, daemon=True, args=(self._resultQueue,)).start()
 
         logging.info("---------- Run crawler ----------")
@@ -114,36 +118,23 @@ class Crawler:
         self._status._result = self._result
         return self
 
-    def findPosterLink(self, url):
-        # Open the URL and read the whole page
-        html = urllib.request.urlopen(url).read()
-        # Parse the string
-        soup = BeautifulSoup(html, 'html.parser')
-        # Retrieve the item we were looking for
-        tag = soup.select_one(self._postersSourceConfig['posterImageSelector'])
-        tagsrc = tag.get('src', None)
-
-        return tagsrc
-
     # Complete a poster item with missing data :
     # - poster url
     # - movie title
     def findPosterData(self, queue):
         while True:
             posterInstance = queue.get()
-            img = self.findPosterLink(posterInstance.getPosterPageUrl())
-            if img:
-                logging.debug(img)
-                posterInstance.setPosterUrl(img)
-                posterTitle = posterInstance.getPosterTitle().split('-')
-                posterInstance.setMovieTitle(' '.join(posterTitle))
-                self._resultQueue.put(posterInstance)
+            posterOp = PosterPageOperation(posterInstance, self._postersSourceConfig['posterImageSelector'])
+            posterOp.run()
+            self._resultQueue.put(posterInstance)
             queue.task_done()
 
     def processToOutput(self, queue):
         while True:
             posterItem = queue.get()
+
             self.getWriter().writerow(posterItem.serialize())
+
             queue.task_done()
 
     def setWriter(self, writer):
