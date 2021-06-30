@@ -4,7 +4,7 @@ import concurrent.futures
 import queue
 import time
 import threading
-from models.CrawlerValidator import CrawlerValidator
+from models.UrlValidator import UrlValidator
 from models.CrawlerStatus import CrawlerStatus
 from models.Poster import Poster
 import re
@@ -22,7 +22,7 @@ class Crawler:
         self._resultQueue = queue.Queue()
         self._result = []
         self._ignoreLinks = []
-        self._validator = CrawlerValidator(self._postersSourceConfig)
+        self._validator = UrlValidator(self._postersSourceConfig)
 
     def getStatus(self):
         return self._status

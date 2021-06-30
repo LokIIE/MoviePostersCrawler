@@ -1,6 +1,6 @@
 import re 
 
-class CrawlerValidator:
+class UrlValidator:
 
     def __init__(self, config):
         self._config = config
