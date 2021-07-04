@@ -39,23 +39,35 @@ class Crawler:
             url = self.getResourceUrl(queue.get())
             foundLinks = self.findValidLinks(url)
             for link in foundLinks:
-                if self._validator.isSearchPage(link) and not link in self._ignoreLinks:
+                if self._validator.isSearchPage(link) and not link in self._ignoreLinks and self.checkAddPagesToScan() :
                     self._scanningQueue.put(link)
                     self._ignoreLinks.append(link)
-                    logging.debug("NEW : %s page queued for analysis ..." % (link))
                     count += 1
-                elif self._validator.isPosterPage(link) and not link in self.getStatus().getResults():
+                    self.getStatus().addPageCount(1)
+                    logging.debug("NEW : %s page queued for analysis ..." % (link))
+                elif self._validator.isPosterPage(link) and not link in self.getStatus().getResults() and self.checkAddPosterToScan() :
                     poster = Poster()
                     poster.setPosterPageUrl(self.getResourceUrl(link))
                     poster.setPosterTitle(self.getPosterTitleFromUrl(link))
                     self.getStatus().addResult(poster)
                     self._processingQueue.put(poster)
 
-            self.getStatus().addPageCount(count)
             logging.debug("---------- %d new poster pages found ----------" % (count))
             
             queue.task_done()
     
+    def checkAddPagesToScan(self):
+        if self._config.getMaxPosterPageCount() == None:
+            return True
+        
+        return self._config.getMaxPosterPageCount() > self.getStatus().getPageCount()
+
+    def checkAddPosterToScan(self):
+        if self._config.getMaxPosterCount() == None:
+            return True
+        
+        return self._config.getMaxPosterCount() > len(self.getStatus().getResults())
+
     def getPosterTitleFromUrl(self, url):
         matchs = re.search(self._postersSourceConfig["posterTitleRegex"], url)
         if matchs:

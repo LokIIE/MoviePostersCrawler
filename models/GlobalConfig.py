@@ -27,3 +27,25 @@ class GlobalConfig:
 
     def getNbDataWorkers(self):
         return int(self.config["process"]["nbDataWorkers"])
+
+    def getMaxPosterPageCount(self):
+        if self.config["process"]["maxPosterPageCount"] == '':
+            return None
+        
+        count = int(self.config["process"]["maxPosterPageCount"])
+
+        if count <= 0:
+            return None
+
+        return count
+
+    def getMaxPosterCount(self):
+        if self.config["process"]["maxPosterCount"] == '':
+            return None
+        
+        count = int(self.config["process"]["maxPosterCount"])
+
+        if count <= 0:
+            return None
+
+        return count
