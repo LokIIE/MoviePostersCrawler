@@ -3,7 +3,7 @@ import urllib.request, urllib.parse, urllib.error
 import json
 from models.Poster import Poster
 from models.GlobalConfig import GlobalConfig
-
+from models.PosterDataStatus import PosterDataStatus
 
 class SearchMovieOperation:
 
@@ -16,6 +16,12 @@ class SearchMovieOperation:
         return self._movieSearchApi + '&language=' + lang + '&query=' + self._poster.getPosterTitle() 
 
     def getMovieResult(self, json):
+        if not json['results']:
+            return None
+
+        if len(json['results']) == 0:
+            return None
+            
         return json['results'][0]
 
     def getMovieTitle(self, json):
@@ -35,21 +41,41 @@ class SearchMovieOperation:
 
     def getMovieDetails(self):
         movieQuery = self.getQuery()
-        # logging.log(logging.DEBUG, movieQuery)
         jsonResponse = json.loads(urllib.request.urlopen(movieQuery).read())
-        logging.log(logging.DEBUG, jsonResponse)
         result = self.getMovieResult(jsonResponse)
-        logging.log(logging.DEBUG, self._poster.getPosterTitle() + ' => ' + self.getMovieTitle(result))
+        
         return result
 
     def run(self):
-        movieDetails = self.getMovieDetails()
+        try:
+            movieDetails = self.getMovieDetails()
+        except:
+            logging.error('Poster %s : Error while searching for movie %s details (query: %s)', self._poster.getPosterTitle(), self._poster.getPosterTitle(), self.getQuery())
+            self._poster.setStatus(PosterDataStatus.MOVIE_DETAILS_NOT_FOUND)
+            return
+
+        if movieDetails == None:
+            logging.warning('Poster %s : Movie "%s" => no result (%s)', self._poster.getPosterTitle(), self._poster.getPosterTitle(), self.getQuery())
+            self._poster.setStatus(PosterDataStatus.MOVIE_DETAILS_NOT_FOUND)
+            return
+        
         self._poster.setMovieTitle(self.getMovieTitle(movieDetails))
+        self._poster.setStatus(PosterDataStatus.MOVIE_DETAILS_FOUND)
+        logging.debug('%s => %s', self._poster.getPosterTitle(), self.getMovieTitle(movieDetails))
 
         externalIdQuery = self.getExternalIdQuery(movieDetails)
-        logging.log(logging.DEBUG, externalIdQuery)
-        externalIds = json.loads(urllib.request.urlopen(externalIdQuery).read())
+        try:
+            externalIds = json.loads(urllib.request.urlopen(externalIdQuery).read())
+        except:
+            logging.error('Poster %s : Error while searching for movie %s Imdb Id (query: %s)', self._poster.getPosterTitle(), self._poster.getMovieTitle())
+            self._poster.setStatus(PosterDataStatus.IMDB_ID_NOT_FOUND)
+            return
         
-        logging.log(logging.DEBUG, self.getImdbId(externalIds))
-
+        if not self.getImdbId(externalIds):
+            self._poster.setStatus(PosterDataStatus.IMDB_ID_NOT_FOUND)
+            logging.warning('Poster %s : Imdb id not found in %s', self._poster.getPosterTitle(), externalIds)
+            return
+            
         self._poster.setMovieImdbId(self.getImdbId(externalIds))
+        self._poster.setStatus(PosterDataStatus.COMPLETE)
+        logging.debug('Poster %s : %s => ImdbId : %s', self._poster.getPosterTitle(), self.getMovieTitle(movieDetails), self.getImdbId(externalIds))

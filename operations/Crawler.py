@@ -9,6 +9,7 @@ import logging
 from models.CrawlerStatus import CrawlerStatus
 from models.GlobalConfig import GlobalConfig
 from models.Poster import Poster
+from models.PosterDataStatus import PosterDataStatus
 from models.UrlValidator import UrlValidator
 from operations.PosterOperation import PosterPageOperation
 from operations.SearchMovieOperation import SearchMovieOperation
@@ -49,6 +50,7 @@ class Crawler:
                     poster = Poster()
                     poster.setPosterPageUrl(self.getResourceUrl(link))
                     poster.setPosterTitle(self.getPosterTitleFromUrl(link))
+                    poster.setStatus(PosterDataStatus.TO_PROCESS)
                     self.getStatus().addResult(poster)
                     self._processingQueue.put(poster)
 
@@ -136,7 +138,7 @@ class Crawler:
     # - movie title
     def findPosterData(self, queue):
         while True:
-            posterInstance = queue.get()
+            posterInstance: Poster = queue.get()
 
             PosterPageOperation(self._config, posterInstance).run()
             SearchMovieOperation(self._config, posterInstance).run()
@@ -146,9 +148,11 @@ class Crawler:
 
     def processToOutput(self, queue):
         while True:
-            posterItem = queue.get()
-
-            self.getWriter().writerow(posterItem.serialize())
+            posterInstance: Poster = queue.get()
+            if posterInstance.getStatus() != PosterDataStatus.COMPLETE:
+                logging.warning('Poster %s : status is %s', posterInstance.getPosterTitle(), posterInstance.getStatus().name)
+            else :
+                self.getWriter().writerow(posterInstance.serialize())
 
             queue.task_done()
 

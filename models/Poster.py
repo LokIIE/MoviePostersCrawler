@@ -1,3 +1,5 @@
+from models.PosterDataStatus import PosterDataStatus
+
 class Poster:
 
     count = 0
@@ -9,6 +11,13 @@ class Poster:
         self._movieTitle = ""
         self._movieUrl = ""
         self.count += 1
+        self.status = PosterDataStatus.INIT
+
+    def getStatus(self):
+        return self.status
+        
+    def setStatus(self, newStatus: PosterDataStatus):
+        self.status = newStatus
 
     def getPosterPageUrl(self):
         return self._posterPageUrl

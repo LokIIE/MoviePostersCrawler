@@ -3,6 +3,7 @@ import urllib.request, urllib.parse, urllib.error
 from bs4 import BeautifulSoup
 from models.GlobalConfig import GlobalConfig
 from models.Poster import Poster
+from models.PosterDataStatus import PosterDataStatus
 
 # Extract the poster image link from the poster page URL
 class PosterPageOperation:
@@ -14,11 +15,16 @@ class PosterPageOperation:
     # For a poster, get the poster movie name
     def run(self):
         img = self.findPosterLink(self._posterInstance.getPosterPageUrl())
-        if img:
-            logging.debug(img)
-            self._posterInstance.setPosterUrl(img)
-            posterTitle = self._posterInstance.getPosterTitle().split('-')
-            self._posterInstance.setMovieTitle(' '.join(posterTitle))
+        if not img:
+            self._posterInstance.setStatus(PosterDataStatus.POSTER_DETAILS_NOT_FOUND)
+            logging.warning('Poster %s : details not found (url: %s)', self._poster.getPosterTitle(), self._posterInstance.getPosterPageUrl())
+            return
+
+        logging.debug(img)
+        self._posterInstance.setPosterUrl(img)
+        posterTitle = self._posterInstance.getPosterTitle().split('-')
+        self._posterInstance.setMovieTitle(' '.join(posterTitle))
+        self._posterInstance.setStatus(PosterDataStatus.POSTER_DETAILS_FOUND)
 
     def findPosterLink(self, url):
         # Open the URL and read the whole page
