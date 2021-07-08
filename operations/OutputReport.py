@@ -24,10 +24,9 @@ class OutputReport:
             if key != PosterDataStatus.COMPLETE:
                 for poster in statusPosters:
                     logging.info(
-                        ' * %s - poster url: %s, movie : %s' % (
-                        poster.getStatus().name,
-                        poster.getPosterUrl(),
-                        poster.getMovieTitle()
+                        ' * movie : %s, poster url: %s' % (
+                        poster.getMovieTitle(),
+                        poster.getPosterUrl()
                     ))
 
 
