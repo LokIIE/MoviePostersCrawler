@@ -16,7 +16,7 @@ class OutputCsv:
 
         with open(self.getFilename(), 'w', newline='', encoding='utf-8') as output:
             writer = csv.writer(output)
-            writer.writerow(["imdbId", "movieTitle", "posterUrl", "posterTitle", "posterPageUrl", "movieUrl"])
+            writer.writerow(["movieTitle", "imdbId", "posterUrl", "movieUrl", "posterPageUrl", "posterTitle"])
             
             for result in results:
                 poster: Poster = result

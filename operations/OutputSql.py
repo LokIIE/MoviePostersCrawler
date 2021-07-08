@@ -13,26 +13,23 @@ class OutputSql:
     def run(self, crawlerStatus: CrawlerStatus):
         logging.info("---------- OUPUT : export result to SQL file %s ----------" % self.getFilename())
         results = crawlerStatus.getCompletedResults()
+
+        lines = [
+            "INSERT INTO list_posters (imdb_id, poster_title, poster_storepage, poster_image, movie_title, movie_url)\n",
+            "VALUES\n"
+        ]
+
+        for result in results:
+            poster: Poster = result
+            lines.append(
+                '("%s", "%s", "%s", "%s", "%s", "%s")\n' % (
+                poster.getImdbId(),
+                poster.getPosterTitle(),
+                poster.getPosterPageUrl(),
+                poster.getPosterUrl(),
+                poster.getMovieTitle(),
+                poster.getMovieUrl()
+            ))
+        
         with open(self.getFilename(), 'w', newline='', encoding='utf-8') as output:
-            output.write("""\n
-                INSERT INTO list_posters(
-                    mdb_id,
-                    iposter_title,
-                    poster_storepage,
-                    poster_image,
-                    movie_title,
-                    movie_url
-                ) VALUES\n
-            """)
-            
-            for result in results:
-                poster: Poster = result
-                output.write(
-                    "('%s', '%s', '%s', '%s', '%s', '%s')\n" % (
-                    poster.getImdbId(),
-                    poster.getPosterTitle(),
-                    poster.getPosterPageUrl(),
-                    poster.getPosterUrl(),
-                    poster.getMovieTitle(),
-                    poster.getMovieUrl()
-                ))
+            output.writelines(lines)
