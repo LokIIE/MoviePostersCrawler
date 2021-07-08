@@ -26,7 +26,7 @@ class PosterPageOperation:
         self._posterInstance.setMovieTitle(' '.join(posterTitle))
         self._posterInstance.setStatus(PosterDataStatus.POSTER_DETAILS_FOUND)
 
-    def findPosterLink(self, url):
+    def findPosterLink(self, url: str) -> str:
         # Open the URL and read the whole page
         html = urllib.request.urlopen(url).read()
         # Parse the string

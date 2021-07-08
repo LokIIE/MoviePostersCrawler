@@ -1,8 +1,9 @@
-import configparser
+import configparser, logging
 
 class GlobalConfig:
 
     def __init__(self, file):
+        logging.info("---------- SETUP : loading configuration ----------")
         self.config = configparser.ConfigParser()
         self.config.read(file)
 
@@ -19,16 +20,16 @@ class GlobalConfig:
     def getDatabase(self):
         return self
 
-    def getOutputFile(self):
+    def getOutputFile(self) -> str:
         return self.config["process"]["output"]
         
-    def getNbScanWorkers(self):
+    def getNbScanWorkers(self) -> int:
         return int(self.config["process"]["nbScanWorkers"])
 
-    def getNbDataWorkers(self):
+    def getNbDataWorkers(self) -> int:
         return int(self.config["process"]["nbDataWorkers"])
 
-    def getMaxPosterPageCount(self):
+    def getMaxPosterPageCount(self) -> int:
         if self.config["process"]["maxPosterPageCount"] == '':
             return None
         
@@ -39,7 +40,7 @@ class GlobalConfig:
 
         return count
 
-    def getMaxPosterCount(self):
+    def getMaxPosterCount(self) -> int:
         if self.config["process"]["maxPosterCount"] == '':
             return None
         

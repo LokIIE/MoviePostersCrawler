@@ -1,23 +1,25 @@
-from models.GlobalConfig import GlobalConfig
-from operations.Crawler import Crawler
-from models.Poster import Poster
-import csv
 import logging
+from models.GlobalConfig import GlobalConfig
+from models.Poster import Poster
+from operations.Crawler import Crawler
+from operations.OutputCsv import OutputCsv
+from operations.OutputReport import OutputReport
+from operations.OutputSql import OutputSql
 logging.basicConfig(level=logging.INFO, filename='crawler-process.log', format='%(asctime)s %(message)s')
 
-logging.info("---------- SETUP : loading configuration ----------")
 config = GlobalConfig("config.ini")
 crawler = Crawler(config)
 try:
-    with open(config.getOutputFile(), 'w', newline='', encoding='utf-8') as output:
-        writer = csv.writer(output)
-        writer.writerow(["movieTitle", "posterUrl", "posterTitle", "posterPageUrl", "movieUrl"])
-        crawler.setWriter(writer)
-        logging.info("---------- START : process launched ----------")
-        crawler.run()
+    logging.info("---------- START : process launched ----------")
+    crawler.run()
+    crawlerStatus = crawler.getStatus()
+    
+    csvOuput = OutputCsv(config.getOutputFile())
+    csvOuput.run(crawlerStatus)
 
     logging.info("---------- END : %d posters have been found ----------" % crawler.getStatus().countPostersCompleted())
-    crawler.getStatus().logExecutionReport()
+
+    OutputReport().run(crawlerStatus)
     
 except Exception:
     logging.fatal("Fatal error in main", exc_info=True)

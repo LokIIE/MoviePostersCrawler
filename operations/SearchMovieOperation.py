@@ -1,6 +1,5 @@
-import logging
+import logging, json
 import urllib.request, urllib.parse, urllib.error
-import json
 from models.Poster import Poster
 from models.GlobalConfig import GlobalConfig
 from models.PosterDataStatus import PosterDataStatus
@@ -12,10 +11,10 @@ class SearchMovieOperation:
         self._apiKey = config.getMovieSource()['token']
         self._poster = posterInstance
 
-    def getQuery(self, lang='en-US'):
+    def getQuery(self, lang='en-US') -> str:
         return self._movieSearchApi + '&language=' + lang + '&query=' + self._poster.getPosterTitle() 
 
-    def getMovieResult(self, json):
+    def getMovieResult(self, json) -> str:
         if not json['results']:
             return None
 
@@ -24,13 +23,13 @@ class SearchMovieOperation:
             
         return json['results'][0]
 
-    def getMovieTitle(self, json):
+    def getMovieTitle(self, json) -> str:
         return json['original_title']
 
-    def getMovieSummary(self, json):
+    def getMovieSummary(self, json) -> str:
         return json['overview']
 
-    def getMovieId(self, json):
+    def getMovieId(self, json) -> str:
         return json['id']
 
     def getExternalIdQuery(self, json):
@@ -39,7 +38,7 @@ class SearchMovieOperation:
     def getImdbId(self, json):
         return json['imdb_id']
 
-    def getMovieDetails(self):
+    def getMovieDetails(self) -> str:
         movieQuery = self.getQuery()
         jsonResponse = json.loads(urllib.request.urlopen(movieQuery).read())
         result = self.getMovieResult(jsonResponse)
@@ -76,6 +75,6 @@ class SearchMovieOperation:
             logging.warning('Poster %s : Imdb id not found in %s', self._poster.getPosterTitle(), externalIds)
             return
             
-        self._poster.setMovieImdbId(self.getImdbId(externalIds))
+        self._poster.setImdbId(self.getImdbId(externalIds))
         self._poster.setStatus(PosterDataStatus.COMPLETE)
         logging.debug('Poster %s : %s => ImdbId : %s', self._poster.getPosterTitle(), self.getMovieTitle(movieDetails), self.getImdbId(externalIds))

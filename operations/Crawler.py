@@ -1,11 +1,11 @@
+import logging
 import urllib.request, urllib.parse, urllib.error
-from bs4 import BeautifulSoup
 import concurrent.futures
 import queue
 import time
 import threading
 import re
-import logging
+from bs4 import BeautifulSoup
 from models.CrawlerStatus import CrawlerStatus
 from models.GlobalConfig import GlobalConfig
 from models.Poster import Poster
@@ -23,15 +23,14 @@ class Crawler:
         self._status = CrawlerStatus(self._postersSourceConfig["collection"])
         self._scanningQueue = queue.Queue()
         self._processingQueue = queue.Queue()
-        self._resultQueue = queue.Queue()
         self._result = []
         self._ignoreLinks = []
         self._validator = UrlValidator(self._postersSourceConfig)
 
-    def getStatus(self):
+    def getStatus(self) -> CrawlerStatus:
         return self._status
 
-    def getResourceUrl(self, resource):
+    def getResourceUrl(self, resource) -> str:
         return self._baseUrl + resource
 
     def findLinks(self, queue):
@@ -41,36 +40,42 @@ class Crawler:
             foundLinks = self.findValidLinks(url)
             for link in foundLinks:
                 if self._validator.isSearchPage(link) and not link in self._ignoreLinks and self.checkAddPagesToScan() :
-                    self._scanningQueue.put(link)
-                    self._ignoreLinks.append(link)
+                    self.addPageToScan(link)
                     count += 1
-                    self.getStatus().addPageCount(1)
-                    logging.debug("NEW : %s page queued for analysis ..." % (link))
-                elif self._validator.isPosterPage(link) and not link in self.getStatus().getResults() and self.checkAddPosterToScan() :
-                    poster = Poster()
-                    poster.setPosterPageUrl(self.getResourceUrl(link))
-                    poster.setPosterTitle(self.getPosterTitleFromUrl(link))
-                    poster.setStatus(PosterDataStatus.TO_PROCESS)
-                    self.getStatus().addResult(poster)
-                    self._processingQueue.put(poster)
+                elif self._validator.isPosterPage(link) and not link in self.getStatus().getResults() and self.checkAddPosterToProcess() :
+                    self.addPosterToProcess(link)
 
             logging.debug("---------- %d new poster pages found ----------" % (count))
             
             queue.task_done()
     
-    def checkAddPagesToScan(self):
+    def checkAddPagesToScan(self) -> bool:
         if self._config.getMaxPosterPageCount() == None:
             return True
         
         return self._config.getMaxPosterPageCount() > self.getStatus().getPageCount()
 
-    def checkAddPosterToScan(self):
+    def addPageToScan(self, link: str):
+        self._scanningQueue.put(link)
+        self._ignoreLinks.append(link)
+        self.getStatus().addPageCount(1)
+        logging.debug("NEW : %s page queued for analysis ..." % (link))
+
+    def checkAddPosterToProcess(self) -> bool:
         if self._config.getMaxPosterCount() == None:
             return True
         
         return self._config.getMaxPosterCount() > len(self.getStatus().getResults())
 
-    def getPosterTitleFromUrl(self, url):
+    def addPosterToProcess(self, link: str):
+        poster = Poster()
+        poster.setPosterPageUrl(self.getResourceUrl(link))
+        poster.setPosterTitle(self.getPosterTitleFromUrl(link))
+        poster.setStatus(PosterDataStatus.TO_PROCESS)
+        self.getStatus().addResult(poster)
+        self._processingQueue.put(poster)
+
+    def getPosterTitleFromUrl(self, url) -> str:
         matchs = re.search(self._postersSourceConfig["posterTitleRegex"], url)
         if matchs:
             return matchs.group(1)
@@ -105,7 +110,7 @@ class Crawler:
 
     def run(self):
         logging.info(
-            "---------- Initializing %d workers for scan, %d for completing information and 1 for output ----------" 
+            "---------- Initializing %d workers for scan, %d for completing information ----------" 
             % (self._config.getNbScanWorkers(), self._config.getNbDataWorkers())
         )
 
@@ -114,8 +119,6 @@ class Crawler:
 
         for _ in range(self._config.getNbDataWorkers()):
             threading.Thread(target=self.findPosterData, daemon=True, args=(self._processingQueue,)).start()
-
-        threading.Thread(target=self.processToOutput, daemon=True, args=(self._resultQueue,)).start()
 
         logging.info("---------- Run crawler ----------")
         
@@ -128,7 +131,6 @@ class Crawler:
         )
 
         self._processingQueue.join()
-        self._resultQueue.join()
 
         self._status._result = self._result
         return self
@@ -143,21 +145,4 @@ class Crawler:
             PosterPageOperation(self._config, posterInstance).run()
             SearchMovieOperation(self._config, posterInstance).run()
 
-            self._resultQueue.put(posterInstance)
             queue.task_done()
-
-    def processToOutput(self, queue):
-        while True:
-            posterInstance: Poster = queue.get()
-            if posterInstance.getStatus() != PosterDataStatus.COMPLETE:
-                logging.warning('Poster %s : status is %s', posterInstance.getPosterTitle(), posterInstance.getStatus().name)
-            else :
-                self.getWriter().writerow(posterInstance.serialize())
-
-            queue.task_done()
-
-    def setWriter(self, writer):
-        self._writer = writer
-
-    def getWriter(self):
-        return self._writer
