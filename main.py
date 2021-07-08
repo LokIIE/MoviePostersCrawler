@@ -17,6 +17,9 @@ try:
     csvOuput = OutputCsv(config.getOutputFile())
     csvOuput.run(crawlerStatus)
 
+    sqlOutput = OutputSql(config.getOutputFile())
+    sqlOutput.run(crawlerStatus)
+
     logging.info("---------- END : %d posters have been found ----------" % crawler.getStatus().countPostersCompleted())
 
     OutputReport().run(crawlerStatus)
