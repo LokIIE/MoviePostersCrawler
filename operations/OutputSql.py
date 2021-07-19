@@ -15,21 +15,28 @@ class OutputSql:
         results = crawlerStatus.getCompletedResults()
 
         lines = [
-            "INSERT INTO list_posters (imdb_id, poster_title, poster_storepage, poster_image, movie_title, movie_url)\n",
+            "INSERT INTO posters (imdb_id, poster_title, poster_storepage, poster_image, movie_title, movie_url)\n",
             "VALUES\n"
         ]
 
-        for result in results:
+        for idx, result in enumerate(results):
             poster: Poster = result
             lines.append(
-                '("%s", "%s", "%s", "%s", "%s", "%s")\n' % (
+                "('%s', '%s', '%s', '%s', '%s', '%s')" % (
                 poster.getImdbId(),
                 poster.getPosterTitle(),
                 poster.getPosterPageUrl(),
                 poster.getPosterUrl(),
-                poster.getMovieTitle(),
+                self.formatForPostgres(poster.getMovieTitle()),
                 poster.getMovieUrl()
             ))
+            if idx == len(results)-1:
+                lines.append(';\n')
+            else:
+                lines.append(',\n')
         
         with open(self.getFilename(), 'w', newline='', encoding='utf-8') as output:
             output.writelines(lines)
+
+    def formatForPostgres(self, value: str) -> str:
+        return value.replace("'", "''")
